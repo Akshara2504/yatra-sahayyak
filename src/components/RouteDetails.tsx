@@ -5,17 +5,20 @@ import { ArrowLeft, MapPin, ArrowDown } from "lucide-react";
 import { useState } from "react";
 import { useRouteStops, type RouteStop } from "@/hooks/useRouteStops";
 import type { Route } from "@/hooks/useRoutes";
+import { translations, type Language } from "@/lib/translations";
 
 interface RouteDetailsProps {
   route: Route;
+  language: Language;
   onBack: () => void;
   onProceedToPayment: (source: RouteStop, destination: RouteStop, fare: number) => void;
 }
 
-export const RouteDetails = ({ route, onBack, onProceedToPayment }: RouteDetailsProps) => {
+export const RouteDetails = ({ route, language, onBack, onProceedToPayment }: RouteDetailsProps) => {
   const { data: stops, isLoading } = useRouteStops(route.id);
   const [sourceStopId, setSourceStopId] = useState<string>("");
   const [destinationStopId, setDestinationStopId] = useState<string>("");
+  const t = translations[language];
 
   const calculateFare = (sourceId: string, destinationId: string) => {
     if (!stops || !sourceId || !destinationId) return 0;
@@ -43,7 +46,7 @@ export const RouteDetails = ({ route, onBack, onProceedToPayment }: RouteDetails
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading route details...</div>
+        <div className="text-muted-foreground">{t.loadingDetails}</div>
       </div>
     );
   }
@@ -60,18 +63,18 @@ export const RouteDetails = ({ route, onBack, onProceedToPayment }: RouteDetails
         </div>
       </div>
 
-      <Card>
+      <Card className="bus-shadow">
         <CardHeader>
-          <CardTitle>Select Your Journey</CardTitle>
+          <CardTitle>{t.selectJourney}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-sm font-medium mb-2 block">From (Source)</label>
+            <label className="text-sm font-medium mb-2 block">{t.from}</label>
             <Select value={sourceStopId} onValueChange={setSourceStopId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select source stop" />
+                <SelectValue placeholder={t.selectSource} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover">
                 {stops?.map((stop) => (
                   <SelectItem key={stop.id} value={stop.id}>
                     {stop.stop.stop_name} ({stop.stop.stop_code})
@@ -86,12 +89,12 @@ export const RouteDetails = ({ route, onBack, onProceedToPayment }: RouteDetails
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">To (Destination)</label>
+            <label className="text-sm font-medium mb-2 block">{t.to}</label>
             <Select value={destinationStopId} onValueChange={setDestinationStopId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select destination stop" />
+                <SelectValue placeholder={t.selectDestination} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover">
                 {stops?.map((stop) => (
                   <SelectItem 
                     key={stop.id} 
@@ -106,27 +109,27 @@ export const RouteDetails = ({ route, onBack, onProceedToPayment }: RouteDetails
           </div>
 
           {fare > 0 && (
-            <div className="bg-accent p-4 rounded-lg">
+            <div className="bg-accent p-4 rounded-lg border-l-4 border-primary">
               <div className="flex justify-between items-center">
-                <span className="font-medium">Total Fare:</span>
+                <span className="font-medium">{t.totalFare}:</span>
                 <span className="text-xl font-bold text-primary">₹{fare}</span>
               </div>
             </div>
           )}
 
           <Button 
-            className="w-full" 
+            className="w-full bus-gradient bus-shadow" 
             disabled={!canProceed}
             onClick={handleProceed}
           >
-            Proceed to Payment
+            {t.proceedToPayment}
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bus-shadow">
         <CardHeader>
-          <CardTitle>All Stops on this Route</CardTitle>
+          <CardTitle>{t.allStops}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">

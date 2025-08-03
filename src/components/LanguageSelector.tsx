@@ -1,14 +1,15 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { type Language } from "@/lib/translations";
 
 interface LanguageSelectorProps {
-  value: string;
-  onValueChange: (value: string) => void;
+  value: Language;
+  onValueChange: (value: Language) => void;
 }
 
 const languages = [
-  { code: 'english', name: 'English', native: 'English' },
-  { code: 'hindi', name: 'Hindi', native: 'हिंदी' },
-  { code: 'telugu', name: 'Telugu', native: 'తెలుగు' },
+  { code: 'english' as Language, name: 'English', native: 'English' },
+  { code: 'hindi' as Language, name: 'Hindi', native: 'हिंदी' },
+  { code: 'telugu' as Language, name: 'Telugu', native: 'తెలుగు' },
 ];
 
 export const LanguageSelector = ({ value, onValueChange }: LanguageSelectorProps) => {
@@ -17,7 +18,7 @@ export const LanguageSelector = ({ value, onValueChange }: LanguageSelectorProps
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Select Language" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="bg-popover">
         {languages.map((lang) => (
           <SelectItem key={lang.code} value={lang.code}>
             {lang.native} ({lang.name})

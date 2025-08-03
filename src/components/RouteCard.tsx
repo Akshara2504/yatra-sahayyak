@@ -2,15 +2,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bus, MapPin } from "lucide-react";
 import type { Route } from "@/hooks/useRoutes";
+import { translations, type Language } from "@/lib/translations";
 
 interface RouteCardProps {
   route: Route;
+  language: Language;
   onSelect: (route: Route) => void;
 }
 
-export const RouteCard = ({ route, onSelect }: RouteCardProps) => {
+export const RouteCard = ({ route, language, onSelect }: RouteCardProps) => {
+  const t = translations[language];
+  
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer">
+    <Card className="hover:shadow-lg hover:bus-shadow transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2">
           <Bus className="h-5 w-5 text-primary" />
@@ -24,9 +28,9 @@ export const RouteCard = ({ route, onSelect }: RouteCardProps) => {
             <p className="text-sm text-foreground">{route.route_name}</p>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">State: {route.state}</span>
-            <Button onClick={() => onSelect(route)} size="sm">
-              Select Route
+            <span className="text-xs text-muted-foreground">{t.state}: {route.state}</span>
+            <Button onClick={() => onSelect(route)} size="sm" className="bus-gradient">
+              {t.selectRoute}
             </Button>
           </div>
         </div>
