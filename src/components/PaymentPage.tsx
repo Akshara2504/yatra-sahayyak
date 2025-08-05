@@ -7,6 +7,7 @@ import { useState } from "react";
 import type { RouteStop } from "@/hooks/useRouteStops";
 import type { Route } from "@/hooks/useRoutes";
 import { translations, type Language } from "@/lib/translations";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PaymentPageProps {
   route: Route;
@@ -57,11 +58,35 @@ export const PaymentPage = ({ route, sourceStop, destinationStop, fare, language
         currency: "INR",
         name: "Yatra Sahayyak",
         description: `${route.route_number}: ${sourceStop.stop.stop_name} to ${destinationStop.stop.stop_name}`,
-        handler: function (response: any) {
+        handler: async function (response: any) {
           // Payment successful
           console.log("Payment successful:", response);
-          // TODO: Save ticket to database and send SMS
-          alert("Payment successful! Ticket will be sent to your mobile number.");
+          
+          try {
+            // Call edge function to generate ticket and send SMS
+            const { data, error } = await supabase.functions.invoke('send-ticket-sms', {
+              body: {
+                routeId: route.id,
+                sourceStopId: sourceStop.id,
+                destinationStopId: destinationStop.id,
+                fare: fare,
+                passengerMobile: mobileNumber,
+                paymentId: response.razorpay_payment_id,
+                languagePreference: language
+              }
+            });
+
+            if (error) throw error;
+
+            if (data.success) {
+              alert(`Payment successful! Ticket ${data.ticket.ticketNumber} has been sent to your mobile number. SMS Status: ${data.ticket.smsStatus}`);
+            } else {
+              alert("Payment successful but failed to generate ticket. Please contact support.");
+            }
+          } catch (error) {
+            console.error("Error generating ticket:", error);
+            alert("Payment successful but failed to send ticket. Please contact support with payment ID: " + response.razorpay_payment_id);
+          }
         },
         prefill: {
           contact: mobileNumber,
