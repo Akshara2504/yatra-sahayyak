@@ -64,8 +64,8 @@ serve(async (req) => {
   try {
     const {
       routeId,
-      sourceStopId,
-      destinationStopId,
+      sourceStopId, // This is route_stops.id
+      destinationStopId, // This is route_stops.id  
       fare,
       passengerMobile,
       paymentId,
@@ -74,20 +74,38 @@ serve(async (req) => {
 
     console.log('Processing ticket creation for:', { routeId, sourceStopId, destinationStopId, fare, passengerMobile });
 
+    // Get the actual stop IDs from route_stops
+    const { data: sourceRouteStop, error: sourceError } = await supabase
+      .from('route_stops')
+      .select('stop_id')
+      .eq('id', sourceStopId)
+      .single();
+
+    const { data: destinationRouteStop, error: destError } = await supabase
+      .from('route_stops')
+      .select('stop_id')
+      .eq('id', destinationStopId)
+      .single();
+
+    if (sourceError || destError) {
+      console.error('Error getting stop IDs:', { sourceError, destError });
+      throw new Error('Invalid route stops');
+    }
+
     // Generate ticket details
     const ticketId = crypto.randomUUID();
     const ticketNumber = generateTicketNumber();
     const qrCode = generateQRCode(ticketId);
 
-    // Insert ticket into database
+    // Insert ticket into database using actual stop IDs
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
         id: ticketId,
         ticket_number: ticketNumber,
         route_id: routeId,
-        source_stop_id: sourceStopId,
-        destination_stop_id: destinationStopId,
+        source_stop_id: sourceRouteStop.stop_id, // Use actual stop ID
+        destination_stop_id: destinationRouteStop.stop_id, // Use actual stop ID
         fare: fare,
         passenger_mobile: passengerMobile,
         payment_id: paymentId,
