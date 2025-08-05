@@ -22,8 +22,44 @@ function generateQRCode(ticketId: string): string {
   return `https://dmgjatzisypbddvlfzbz.supabase.co/functions/v1/verify-ticket?id=${ticketId}`;
 }
 
+function formatPhoneNumber(phone: string): string {
+  // Remove any non-digit characters
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // If it's a 10-digit Indian number, add +91
+  if (cleaned.length === 10) {
+    return `+91${cleaned}`;
+  }
+  
+  // If it already has country code but no +, add it
+  if (cleaned.length === 12 && cleaned.startsWith('91')) {
+    return `+${cleaned}`;
+  }
+  
+  // If it already has +, return as is
+  if (phone.startsWith('+')) {
+    return phone;
+  }
+  
+  // Default: assume it's correctly formatted
+  return phone;
+}
+
 async function sendSMS(to: string, message: string): Promise<boolean> {
   try {
+    console.log('Attempting to send SMS to:', to);
+    console.log('Twilio Account SID:', twilioAccountSid ? 'Set' : 'Missing');
+    console.log('Twilio Auth Token:', twilioAuthToken ? 'Set' : 'Missing');
+    console.log('Twilio Phone Number:', twilioPhoneNumber);
+    
+    if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+      console.error('Missing Twilio credentials');
+      return false;
+    }
+
+    const formattedTo = formatPhoneNumber(to);
+    console.log('Formatted phone number:', formattedTo);
+    
     const auth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
     
     const response = await fetch(
@@ -35,23 +71,26 @@ async function sendSMS(to: string, message: string): Promise<boolean> {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          To: to,
+          To: formattedTo,
           From: twilioPhoneNumber!,
           Body: message,
         }),
       }
     );
 
+    console.log('Twilio API response status:', response.status);
+    
     if (!response.ok) {
-      const error = await response.text();
-      console.error('Twilio SMS error:', error);
+      const errorText = await response.text();
+      console.error('Twilio SMS error response:', errorText);
       return false;
     }
 
-    console.log('SMS sent successfully to:', to);
+    const responseData = await response.json();
+    console.log('SMS sent successfully:', responseData);
     return true;
   } catch (error) {
-    console.error('SMS sending failed:', error);
+    console.error('SMS sending failed with error:', error);
     return false;
   }
 }
