@@ -182,25 +182,8 @@ serve(async (req) => {
       console.error('Error creating transaction:', transactionError);
     }
 
-    // Format SMS message
-    const timestamp = new Date().toLocaleString('en-IN', { 
-      timeZone: 'Asia/Kolkata',
-      day: '2-digit',
-      month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    const smsMessage = `🎟️ Ticket Confirmed!
-Route: ${ticket.source_stop.stop_name} ➝ ${ticket.destination_stop.stop_name}
-Fare: ₹${fare}
-Time: ${timestamp}
-
-Scan your ticket here (valid for 2 uses):
-${qrCode}
-
-Ticket ID: ${ticketNumber}`;
+    // Format short SMS message (under 100 characters for Twilio trial)
+    const smsMessage = `TkID:${ticketNumber} ₹${fare} ${ticket.source_stop.stop_name}->${ticket.destination_stop.stop_name} Scan: ${qrCode}`;
 
     // Send SMS
     const smsSuccess = await sendSMS(passengerMobile, smsMessage);
