@@ -19,7 +19,7 @@ function generateTicketNumber(): string {
 }
 
 function generateQRCode(ticketId: string): string {
-  return `https://dmgjatzisypbddvlfzbz.supabase.co/functions/v1/verify-ticket?id=${ticketId}`;
+  return `https://dmgjatzisypbddvlfzbz.supabase.co/ticket/${ticketId}`;
 }
 
 function formatPhoneNumber(phone: string): string {
@@ -182,8 +182,11 @@ serve(async (req) => {
       console.error('Error creating transaction:', transactionError);
     }
 
-    // Format short SMS message (under 100 characters for Twilio trial)
-    const smsMessage = `TkID:${ticketNumber} ₹${fare} ${ticket.source_stop.stop_name}->${ticket.destination_stop.stop_name} Scan: ${qrCode}`;
+    // Format SMS message with emoji and clear instructions
+    const smsMessage = `🚌 Your bus ticket is ready!
+Scan this QR code at the bus stop: ${qrCode}
+
+Note: QR code will expire after 2 scans.`;
 
     // Send SMS
     const smsSuccess = await sendSMS(passengerMobile, smsMessage);
