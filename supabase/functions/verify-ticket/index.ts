@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import QRCode from 'https://esm.sh/qrcode@1.5.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -94,10 +95,10 @@ serve(async (req) => {
       return new Response(
         `<!DOCTYPE html>
         <html>
-        <head><title>Ticket Already Used</title></head>
+        <head><title>QR Expired</title></head>
         <body style="font-family: Arial; padding: 20px; text-align: center;">
-          <h1>🚫 Ticket Already Used</h1>
-          <p>This ticket has been scanned the maximum number of times (2) and is no longer valid</p>
+          <h1>🚫 QR Expired</h1>
+          <p>This QR code has been scanned the maximum number of times (2) and is no longer valid</p>
           <div style="background: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 8px;">
             <strong>Ticket: ${ticket.ticket_number}</strong><br>
             Route: ${ticket.source_stop.stop_name} → ${ticket.destination_stop.stop_name}<br>
@@ -121,6 +122,26 @@ serve(async (req) => {
 
     const isLastScan = newScanCount >= 2;
     const createdAt = new Date(ticket.created_at);
+
+    // Generate QR code with ticket information
+    const qrData = JSON.stringify({
+      ticket_id: ticket.id,
+      ticket_number: ticket.ticket_number,
+      source: ticket.source_stop.stop_name,
+      destination: ticket.destination_stop.stop_name,
+      fare: ticket.fare,
+      timestamp: createdAt.toISOString(),
+      route: ticket.route.route_number
+    });
+
+    const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+      width: 256,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    });
 
     return new Response(
       `<!DOCTYPE html>
@@ -147,12 +168,19 @@ serve(async (req) => {
               <strong>Expires:</strong> ${expiresAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
             </div>
           </div>
+
+          <!-- QR Code Section -->
+          <div style="background: #ffffff; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #e5e7eb;">
+            <h3 style="margin: 0 0 15px 0; color: #374151;">Ticket QR Code</h3>
+            <img src="${qrCodeDataURL}" alt="Ticket QR Code" style="max-width: 200px; height: auto; border-radius: 4px;">
+            <p style="font-size: 12px; color: #6b7280; margin: 10px 0 0 0;">Scan for ticket verification</p>
+          </div>
           
           <div style="background: ${isLastScan ? '#fef3c7' : '#dcfce7'}; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <strong>Scans Used: ${newScanCount}/2</strong><br>
             ${isLastScan ? 
-              '<span style="color: #d97706;">⚠️ This was the final scan. Ticket is now expired.</span>' : 
-              '<span style="color: #059669;">✅ Ticket is still valid for 1 more scan</span>'
+              '<span style="color: #d97706;">⚠️ This was the final scan. QR code is now expired.</span>' : 
+              '<span style="color: #059669;">✅ QR code is still valid for 1 more scan</span>'
             }
           </div>
           
