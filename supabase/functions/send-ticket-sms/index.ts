@@ -47,13 +47,16 @@ function formatPhoneNumber(phone: string): string {
 
 async function sendSMS(to: string, message: string): Promise<boolean> {
   try {
+    console.log('=== SMS SENDING DEBUG ===');
     console.log('Attempting to send SMS to:', to);
-    console.log('Twilio Account SID:', twilioAccountSid ? 'Set' : 'Missing');
-    console.log('Twilio Auth Token:', twilioAuthToken ? 'Set' : 'Missing');
+    console.log('Twilio Account SID:', twilioAccountSid ? `Set (${twilioAccountSid.substring(0, 10)}...)` : 'Missing');
+    console.log('Twilio Auth Token:', twilioAuthToken ? 'Set (hidden)' : 'Missing');
     console.log('Twilio Phone Number:', twilioPhoneNumber);
+    console.log('Message content:', message);
     
     if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-      console.error('Missing Twilio credentials');
+      console.error('❌ Missing Twilio credentials - SMS will not be sent');
+      console.error('Required secrets: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER');
       return false;
     }
 
