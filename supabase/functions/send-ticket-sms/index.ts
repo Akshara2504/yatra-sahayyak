@@ -11,6 +11,7 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
 const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
 const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
+const twilioMessagingServiceSid = Deno.env.get('TWILIO_MESSAGING_SERVICE_SID');
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -24,25 +25,30 @@ function generateQRCode(ticketId: string): string {
 
 function formatPhoneNumber(phone: string): string {
   // Remove any non-digit characters
-  const cleaned = phone.replace(/\D/g, '');
-  
+  let cleaned = phone.replace(/\D/g, '');
+
+  // Handle leading zero for local formats (e.g., 0XXXXXXXXXX)
+  if (cleaned.length === 11 && cleaned.startsWith('0')) {
+    cleaned = cleaned.slice(1);
+  }
+
   // If it's a 10-digit Indian number, add +91
   if (cleaned.length === 10) {
     return `+91${cleaned}`;
   }
-  
+
   // If it already has country code but no +, add it
-  if (cleaned.length === 12 && cleaned.startsWith('91')) {
+  if ((cleaned.length === 12 || cleaned.length === 13) && !phone.startsWith('+')) {
     return `+${cleaned}`;
   }
-  
+
   // If it already has +, return as is
   if (phone.startsWith('+')) {
     return phone;
   }
-  
-  // Default: assume it's correctly formatted
-  return phone;
+
+  // Fallback: best effort to E.164 by prefixing +
+  return `+${cleaned}`;
 }
 
 async function sendSMS(to: string, message: string): Promise<boolean> {
@@ -63,7 +69,19 @@ async function sendSMS(to: string, message: string): Promise<boolean> {
     const formattedTo = formatPhoneNumber(to);
     console.log('Formatted phone number:', formattedTo);
     
-    const auth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
+const auth = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
+    
+    const params: Record<string, string> = {
+      To: formattedTo,
+      Body: message,
+    };
+    if (twilioMessagingServiceSid) {
+      params['MessagingServiceSid'] = twilioMessagingServiceSid;
+      console.log('Using Twilio Messaging Service SID');
+    } else {
+      params['From'] = twilioPhoneNumber!;
+      console.log('Using Twilio From phone number');
+    }
     
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`,
@@ -73,11 +91,7 @@ async function sendSMS(to: string, message: string): Promise<boolean> {
           'Authorization': `Basic ${auth}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({
-          To: formattedTo,
-          From: twilioPhoneNumber!,
-          Body: message,
-        }),
+        body: new URLSearchParams(params),
       }
     );
 
