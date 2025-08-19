@@ -199,11 +199,8 @@ serve(async (req) => {
       console.error('Error creating transaction:', transactionError);
     }
 
-    // Format SMS message with emoji and clear instructions
-    const smsMessage = `🚌 Your bus ticket is ready!
-Scan this QR code at the bus stop: ${qrCode}
-
-Note: QR code will expire after 2 scans.`;
+    // Format short SMS message (under 100 characters for Twilio trial)
+    const smsMessage = `TkID:${ticketNumber} ₹${fare} ${ticket.source_stop.stop_name}->${ticket.destination_stop.stop_name} Scan: ${qrCode}`;
 
     // Send SMS
     const smsSuccess = await sendSMS(passengerMobile, smsMessage);
